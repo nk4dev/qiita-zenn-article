@@ -1,10 +1,8 @@
-# Please set 'QIITA_TOKEN' secret to your repository
 name: Publish articles
 
 on:
   push:
     branches:
-      - main
       - master
   workflow_dispatch:
 
@@ -13,6 +11,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
+
   cancel-in-progress: false
 
 jobs:
@@ -20,10 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: UniPro-tech/qiita-cli/actions/publish@fork
+      - uses: increments/qiita-cli/actions/publish@v0
         with:
           qiita-token: ${{ secrets.QIITA_TOKEN }}
-          root: "."
