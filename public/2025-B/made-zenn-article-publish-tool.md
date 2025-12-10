@@ -3,7 +3,7 @@ title: ZennとQiitaの記事同時公開ツールを作った
 organization_url_name: null
 slide: false
 ignorePublish: false
-private: true
+private: false
 tags:
   - name: github
   - name: zenn

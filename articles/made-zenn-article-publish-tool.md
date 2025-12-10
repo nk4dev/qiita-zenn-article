@@ -5,7 +5,7 @@ type: tech
 topics:
   - github
   - zenn
-published: false
+published: true
 organization_url_name: null
 slide: false
 ignorePublish: false
