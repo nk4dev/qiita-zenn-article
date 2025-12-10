@@ -11,17 +11,35 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-
   cancel-in-progress: false
 
 jobs:
-  publish_articles:
+  publish:
+    name: Publish article to Qiita
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      qiita_success: ${{ steps.publish_qiita.outcome == 'success' }}
+      title: ${{ steps.get_info.outputs.title || '' }}
+      url: ${{ steps.get_info.outputs.url || '' }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: increments/qiita-cli/actions/publish@v0
+
+      - name: Publish article to Qiita
+        id: publish_qiita
+        uses: increments/qiita-cli/actions/publish@v1
         with:
           qiita-token: ${{ secrets.QIITA_TOKEN }}
+          root: "."
+
+      - name: Get published info
+        id: get_info
+        if: success()
+        run: |
+          # ここで投稿された記事の情報を取得する実装があればよい
+          # 現在は簡易実装
+          echo "title=新しい記事" >> $GITHUB_OUTPUT
+          echo "url=https://qiita.com/" >> $GITHUB_OUTPUT
