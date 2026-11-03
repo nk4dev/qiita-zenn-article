@@ -3,8 +3,10 @@ title: "【ALCOM+Steam】LinuxでVRChatをはじめよう"
 emoji: "👓"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["VRChat","Ubuntu"]
-published: false
+published: true
 ---
+※blogで書いたもののZenn版です
+
 ## まえがき
 
 Googleサーチコンソールやアナリティクスを見ていたら、Ubuntuで改変する記事が思いの外需要があったので、今回はインストールから書いてみました。
