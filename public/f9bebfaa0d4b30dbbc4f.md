@@ -11,6 +11,7 @@ updated_at: '2023-04-02T18:15:31+09:00'
 id: f9bebfaa0d4b30dbbc4f
 organization_url_name: null
 slide: false
+ignorePublish: false
 ---
 題名からしてわかりにくいのですが、要はWindowsとLinuxのコマンドがどういう風に違うのかまとめです。
 

@@ -10,6 +10,7 @@ updated_at: '2023-04-24T08:02:41+09:00'
 id: 0a5afcab5f35ec531ace
 organization_url_name: null
 slide: false
+ignorePublish: false
 ---
 # yarnとnpmはやれることは同じ
 

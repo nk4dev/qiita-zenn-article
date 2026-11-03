@@ -10,6 +10,7 @@ updated_at: '2024-01-25T13:47:05+09:00'
 id: 4f7b3f2dbd9be1d17f1a
 organization_url_name: null
 slide: false
+ignorePublish: false
 ---
 # 追記
 今年の初めにv2が公開され、実装方法が大幅に変わりました
