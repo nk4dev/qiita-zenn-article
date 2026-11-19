@@ -6,9 +6,13 @@
   "repository": "https://github.com/nk4dev/qiita-zenn-articles",
   "author": "nk4dev<nknighta@varius.technology>",
   "scripts": {
-    "ztoq": "ts-node scripts/ztoq.ts"
+    "ztoq": "ts-node scripts/ztoq.ts",
+    "dev": "",
+    "dev:zenn": "zenn",
+    "dev:qiita": ""
   },
   "dependencies": {
+    "@qiita/qiita-cli": "^1.13.0",
     "@types/git-url-parse": "^9.0.1",
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^20.4.0",
@@ -24,7 +28,7 @@
     "typescript": "^5.1.6",
     "wait-on": "^7.0.1",
     "yargs": "^17.0.2",
-    "zenn-cli": "^0.1.144"
+    "zenn-cli": "^0.5.15"
   },
   "license": "MIT"
 }
