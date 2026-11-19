@@ -36,11 +36,20 @@ jobs:
           qiita-token: ${{ secrets.QIITA_TOKEN }}
           root: "."
 
-      - name: Sync articles from Qiita on failure
+      - name: Remove updated_at from frontmatter on failure
         if: steps.publish_qiita.outcome == 'failure'
-        env:
-          QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
-        run: npx --yes @qiita/qiita-cli pull --root .
+        run: |
+          set -euo pipefail
+          if [ -d "public" ]; then
+            find public -type f -name '*.md' -print0 | while IFS= read -r -d '' file; do
+              awk '
+                { sub(/\r$/, "") }
+                /^---$/ { fm++; print; next }
+                fm == 1 && /^updated_at:/ { next }
+                { print }
+              ' "$file" > "${file}.tmp" && mv "${file}.tmp" "$file"
+            done
+          fi
 
       - name: Retry publish article to Qiita
         id: retry_publish_qiita
