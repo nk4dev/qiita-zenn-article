@@ -6,10 +6,10 @@
   "repository": "https://github.com/nk4dev/qiita-zenn-articles",
   "author": "nk4dev<nknighta@varius.technology>",
   "scripts": {
-    "ztoq": "ts-node scripts/ztoq.ts",
-    "dev": "",
+    "ztoq": "ts-node scripts/ztoq.ts ./articles ./public",
     "zenn": "zenn",
-    "qiita": "qiita"
+    "qiita": "qiita",
+    "pull": "bun run ztoq && qiita pull"
   },
   "dependencies": {
     "@qiita/qiita-cli": "^1.13.0",
