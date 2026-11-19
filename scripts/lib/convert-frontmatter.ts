@@ -2,161 +2,160 @@ import { existsSync, readFileSync } from "fs";
 import matter from "gray-matter";
 import yaml from "js-yaml";
 
+function parseBoolean(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") {
+      return true;
+    }
+    if (normalized === "false") {
+      return false;
+    }
+  }
+  return undefined;
+}
+
+function toTagName(entry: unknown): string {
+  let raw = "";
+  if (typeof entry === "string") {
+    raw = entry;
+  } else if (entry && typeof entry === "object" && "name" in entry) {
+    const rawName = (entry as { name?: unknown }).name;
+    raw = rawName != null ? String(rawName) : "";
+  } else if (entry != null) {
+    raw = String(entry);
+  }
+
+  const cleaned = raw.trim().replace(/^#/, "").trim();
+  const atIndex = cleaned.indexOf("@");
+  return atIndex === -1 ? cleaned : cleaned.slice(0, atIndex).trim();
+}
+
+function normalizeOptionalString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed !== "" ? trimmed : null;
+}
+
+function normalizeUpdatedAt(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return "";
+}
+
+const HANDLED_OR_REMOVED_KEYS = new Set([
+  "emoji",
+  "type",
+  "published",
+  "topics",
+  "title",
+  "tags",
+  "private",
+  "updated_at",
+  "id",
+  "organization_url_name",
+  "slide",
+  "ignorePublish",
+  "posting_campaign_uuid",
+  "agreed_posting_campaign_term",
+]);
+
 export function convertFrontmatter(outputPath?: string) {
   return function _convertFrontmatter(inputContent: string) {
     const { data, content } = matter(inputContent);
-    const dataCloned = { ...data };
+    const dataCloned = { ...data } as Record<string, unknown>;
 
-    // Remove unnecessary fields
-    delete dataCloned.emoji;
-    delete dataCloned.type;
+    // Load existing output frontmatter so Qiita-assigned metadata is preserved.
+    // Let read/parse errors throw rather than silently dropping an existing `id`.
+    const existingData: Record<string, unknown> =
+      outputPath && existsSync(outputPath)
+        ? (matter(readFileSync(outputPath, "utf8")).data as Record<
+            string,
+            unknown
+          >)
+        : {};
 
-    // Convert published to private (reversed)
-    dataCloned.private = !dataCloned.published;
-    delete dataCloned.published;
-
-    // Convert topics to Qiita-style tag objects and merge with existing tags.
-    // Qiita tags are objects like: { name: 'TagName', versions?: ['...'] }
-    // Additionally, we parse versioned topics that use the `@` syntax,
-    // e.g. `package@1.x` -> { name: 'package', versions: ['1.x'] }.
-    function toTagObject(entry: any): { name: string; versions?: string[] } {
-      // Helper to parse a name@versions string
-      function parseInlineVersion(str: string) {
-        const entryStr = str.trim().replace(/^#/, "");
-        const atIndex = entryStr.indexOf("@");
-        if (atIndex === -1) {
-          return {
-            name: entryStr,
-            versions: undefined as string[] | undefined,
-          };
-        }
-        const namePart = entryStr.slice(0, atIndex).trim();
-        const versionPart = entryStr.slice(atIndex + 1).trim();
-        const versions = versionPart
-          ? versionPart
-              .split(/[,\s]+/)
-              .map((v: any) => String(v).trim())
-              .filter(Boolean)
-          : undefined;
-        return { name: namePart, versions };
-      }
-
-      if (typeof entry === "string") {
-        const parsed = parseInlineVersion(entry);
-        return parsed.versions && parsed.versions.length
-          ? { name: parsed.name, versions: parsed.versions }
-          : { name: parsed.name };
-      } else if (entry && typeof entry === "object") {
-        // Normalize name; if it contains `@`, extract version from it as fallback.
-        let name = entry.name
-          ? String(entry.name).trim()
-          : String(entry).trim();
-        let versions: string[] | undefined;
-
-        if (Array.isArray(entry.versions) && entry.versions.length) {
-          versions = entry.versions.map(String).map((v: string) => v.trim());
-        } else if (
-          typeof entry.versions === "string" &&
-          entry.versions.trim()
-        ) {
-          versions = entry.versions
-            .split(/[,\s]+/)
-            .map((v: any) => String(v).trim())
-            .filter(Boolean);
-        } else if (typeof entry.version === "string" && entry.version.trim()) {
-          // Accept `version` field too, in case it's used
-          versions = entry.version
-            .split(/[,\s]+/)
-            .map((v: string) => v.trim())
-            .filter(Boolean);
-        } else {
-          // Another fallback: parse `name@versions` if present inside the name string
-          const parsed = parseInlineVersion(name);
-          if (parsed.versions && parsed.versions.length) {
-            name = parsed.name;
-            versions = parsed.versions;
-          }
-        }
-
-        return versions && versions.length ? { name, versions } : { name };
-      } else {
-        // Fallback for unexpected types
-        const parsed = parseInlineVersion(String(entry));
-        return parsed.versions && parsed.versions.length
-          ? { name: parsed.name, versions: parsed.versions }
-          : { name: parsed.name };
-      }
-    }
-
-    // Normalize any existing tags in frontmatter into Qiita tag objects
-    const existingTagsArr: { name: string; versions?: string[] }[] =
-      Array.isArray(dataCloned.tags)
-        ? (dataCloned.tags as any[]).map((t) => toTagObject(t))
-        : [];
-
-    // Normalize topics (Zenn) to tag objects
-    const topicsArr = Array.isArray(dataCloned.topics)
+    const rawTags = Array.isArray(dataCloned.tags) ? dataCloned.tags : [];
+    const rawTopics = Array.isArray(dataCloned.topics)
       ? dataCloned.topics
-      : dataCloned.topics
+      : dataCloned.topics != null
         ? [dataCloned.topics]
         : [];
-    const normalizedTopics: { name: string; versions?: string[] }[] = (
-      topicsArr as any[]
-    ).map((t) => toTagObject(t));
 
-    // Merge existing tags and topics, deduplicating by tag name (case-insensitive)
-    const mergedMap = new Map<string, { name: string; versions?: string[] }>();
-    for (const tag of existingTagsArr) {
-      mergedMap.set(tag.name.toLowerCase(), {
-        name: tag.name,
-        versions: tag.versions ? [...tag.versions] : undefined,
-      });
-    }
-
-    for (const tag of normalizedTopics) {
-      const key = tag.name.toLowerCase();
-      if (mergedMap.has(key)) {
-        const current = mergedMap.get(key)!;
-        if (current.versions || tag.versions) {
-          const combined = new Set<string>();
-          if (current.versions) {
-            for (const v of current.versions) combined.add(v);
-          }
-          if (tag.versions) {
-            for (const v of tag.versions) combined.add(v);
-          }
-          current.versions = Array.from(combined);
-        }
-      } else {
-        mergedMap.set(key, {
-          name: tag.name,
-          versions: tag.versions ? [...tag.versions] : undefined,
-        });
+    const dedupedTags = new Map<string, string>();
+    for (const entry of [...rawTags, ...rawTopics]) {
+      const tagName = toTagName(entry);
+      if (!tagName) {
+        continue;
+      }
+      const key = tagName.toLowerCase();
+      if (!dedupedTags.has(key)) {
+        dedupedTags.set(key, tagName);
       }
     }
 
-    const mergedTags = Array.from(mergedMap.values());
-    if (mergedTags.length) {
-      dataCloned.tags = mergedTags;
-    } else {
-      delete dataCloned.tags;
-    }
-    delete dataCloned.topics;
+    const organizationUrlName =
+      "organization_url_name" in dataCloned
+        ? normalizeOptionalString(dataCloned.organization_url_name)
+        : normalizeOptionalString(existingData.organization_url_name);
 
-    // Add new fields
-    if (outputPath && existsSync(outputPath)) {
-      const existingData = matter(readFileSync(outputPath, "utf8")).data;
-      dataCloned.updated_at = existingData.updated_at || null;
-      dataCloned.id = existingData.id || null;
-      dataCloned.organization_url_name =
-        existingData.organization_url_name || null;
-    } else {
-      dataCloned.updated_at = null;
-      dataCloned.id = null;
-      dataCloned.organization_url_name = null;
+    const slide =
+      parseBoolean(dataCloned.slide) ??
+      parseBoolean(existingData.slide) ??
+      false;
+
+    const ignorePublish =
+      parseBoolean(dataCloned.ignorePublish) ??
+      parseBoolean(existingData.ignorePublish) ??
+      false;
+
+    const orderedData: Record<string, unknown> = {
+      title: dataCloned.title == null ? "" : String(dataCloned.title),
+      tags: Array.from(dedupedTags.values()),
+      private: !Boolean(dataCloned.published),
+      updated_at: normalizeUpdatedAt(existingData.updated_at),
+      id: normalizeOptionalString(existingData.id),
+      organization_url_name: organizationUrlName,
+      slide,
+      ignorePublish,
+    };
+
+    if (
+      "posting_campaign_uuid" in dataCloned &&
+      dataCloned.posting_campaign_uuid !== undefined
+    ) {
+      orderedData.posting_campaign_uuid = dataCloned.posting_campaign_uuid;
+    } else if (existingData.posting_campaign_uuid !== undefined) {
+      orderedData.posting_campaign_uuid = existingData.posting_campaign_uuid;
     }
 
-    const frontmatter = yaml.dump(dataCloned);
+    if (
+      "agreed_posting_campaign_term" in dataCloned &&
+      dataCloned.agreed_posting_campaign_term !== undefined
+    ) {
+      orderedData.agreed_posting_campaign_term =
+        parseBoolean(dataCloned.agreed_posting_campaign_term) ?? false;
+    } else if (existingData.agreed_posting_campaign_term !== undefined) {
+      orderedData.agreed_posting_campaign_term =
+        parseBoolean(existingData.agreed_posting_campaign_term) ?? false;
+    }
+
+    for (const [key, value] of Object.entries(dataCloned)) {
+      if (!HANDLED_OR_REMOVED_KEYS.has(key)) {
+        orderedData[key] = value;
+      }
+    }
+
+    const frontmatter = yaml.dump(orderedData, { lineWidth: -1 });
     return `---\n${frontmatter}---\n${content}`;
   };
 }

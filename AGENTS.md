@@ -39,7 +39,7 @@ There are no tests, linter, or build step. `ztoq` runs through `ts-node` (Common
 
 Because the workflow pushes commits to `master`, pull before making further changes after a publish.
 
-The workflow's "Get published info" step and its `title` / `url` / `qiita_success` job outputs are placeholders — no job consumes them yet.
+The workflow's "Get published info" step extracts `title` and `url` from the latest changed file under `public/` into the `title` / `url` / `qiita_success` job outputs (no downstream job consumes them yet).
 
 ## Converter architecture (`scripts/`)
 
@@ -49,14 +49,15 @@ Current transforms, in order:
 
 1. **`convertFrontmatter(outputPath)`**
    - Drops `emoji` and `type`; `published: true` becomes `private: false` (inverted).
-   - `topics` are merged with any existing `tags` (case-insensitive dedupe) and written as Qiita tag objects (`- name: foo`). A `name@1.x` topic becomes `{ name, versions: ['1.x'] }`.
-   - **Reads the existing output file** to carry over `id`, `updated_at`, and `organization_url_name`. These are assigned by Qiita; preserving them is what makes a re-conversion update the existing Qiita article instead of creating a duplicate. Never regenerate into a fresh path or delete the output file of an already-published article.
-   - Other frontmatter keys (e.g. `slide`, `ignorePublish`) pass through unchanged, so Qiita-only keys can be set in the Zenn source.
+   - `topics` are merged with any existing `tags` (case-insensitive dedupe) and written as a string array (`- foo`) as expected by `@qiita/qiita-cli`. Versioned topics like `name@1.x` or legacy `{ name }` tag objects are normalized to plain tag name strings.
+   - Always outputs `slide` and `ignorePublish` as booleans (resolved in priority order: Zenn source → existing output file → `false` default).
+   - **Reads the existing output file** to carry over `id`, `updated_at` (defaults to `''` for new articles), and `organization_url_name` (if explicitly set in the Zenn source, that value takes precedence). Preserving `id` and `updated_at` is what makes a re-conversion update the existing Qiita article instead of creating a duplicate or failing staleness checks. Never regenerate into a fresh path or delete the output file of an already-published article.
+   - Other frontmatter keys (e.g. `posting_campaign_uuid`, `agreed_posting_campaign_term`, or custom keys) pass through (or are carried over from the existing output file), so Qiita-only keys can be set in the Zenn source.
 2. **`replaceImagePaths`** — rewrites root-relative images (`![](/images/x.png)`) to `raw.githubusercontent.com/<owner>/<repo>/<branch>/...`, using `git remote origin` and the **currently checked-out branch**. Running `ztoq` on a non-`master` branch bakes that branch name into the URLs. Only matches images with empty alt text, and skips fenced code blocks. Silently no-ops if there is no git remote.
 3. **`replaceMessageToNote`** — `:::message` → `:::note`.
 
 ## `public/` layout notes
 
 - Hash-named files (`public/<20-hex-id>.md`) are articles pulled from Qiita; the filename is the Qiita article id.
-- `public/2025-A/` currently holds a duplicate copy of those same hash-named files. `public/2025-B/` holds articles generated from `articles/` by `ztoq`.
+- Articles generated from `articles/` by `ztoq` live under `public/` (e.g. `public/<slug>.md` or `public/2025-B/<slug>.md`). Never place duplicate copies of the same article `id` in multiple subdirectories under `public/`, as `qiita-cli` scans `public/` recursively and only syncs one path per `id`.
 - `public/.remote/` is qiita-cli's cache and is gitignored.

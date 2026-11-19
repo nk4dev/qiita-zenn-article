@@ -1,13 +1,14 @@
 ---
 title: 【ALCOM+Steam】LinuxでVRChatをはじめよう
-private: false
 tags:
-  - name: VRChat
-  - name: Ubuntu
-updated_at: null
+  - VRChat
+  - Ubuntu
+private: false
+updated_at: ''
 id: null
 organization_url_name: null
-slide: fal
+slide: false
+ignorePublish: false
 ---
 ※blogで書いたもののZenn版です
 

@@ -10,7 +10,7 @@ import {
 } from "fs";
 import yargs from "yargs";
 import { zennMarkdownToQiitaMarkdown } from "./lib";
-import { basename, join } from "path";
+import { basename, dirname, join } from "path";
 
 const { inputPath, outputPath, watch } = yargs
   .command(
@@ -49,6 +49,7 @@ function convertAndWrite(inputFilePath: string, outputFilePath: string) {
     inputContent,
     outputFilePath,
   );
+  mkdirSync(dirname(outputFilePath), { recursive: true });
   writeFileSync(outputFilePath, outputContent, "utf8");
 }
 

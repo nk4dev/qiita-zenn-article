@@ -1,14 +1,14 @@
 ---
 title: ZennとQiitaの記事同時公開ツールを作った
+tags:
+  - github
+  - zenn
+private: false
+updated_at: ''
+id: null
 organization_url_name: null
 slide: false
 ignorePublish: false
-private: false
-tags:
-  - name: github
-  - name: zenn
-updated_at: null
-id: null
 ---
 > [!warning]
 > まだ調整中です

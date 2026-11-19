@@ -39,7 +39,57 @@ jobs:
         id: get_info
         if: success()
         run: |
-          # ここで投稿された記事の情報を取得する実装があればよい
-          # 現在は簡易実装
-          echo "title=新しい記事" >> $GITHUB_OUTPUT
-          echo "url=https://qiita.com/" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          # 直近コミット（qiita-cli による自動コミット含む）から更新された public/ 配下の記事ファイルを抽出
+          if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            CHANGED_FILE=$(git -c core.quotepath=false diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'public/*.md' | head -n 1 || true)
+          else
+            CHANGED_FILE=$(git -c core.quotepath=false ls-files -- 'public/*.md' | head -n 1 || true)
+          fi
+
+          if [ -z "${CHANGED_FILE}" ] || [ ! -f "${CHANGED_FILE}" ]; then
+            {
+              printf 'title=%s\n' "記事一覧を更新"
+              printf 'url=%s\n' "https://qiita.com/"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # フロントマターから title と id を抽出（存在しない場合はフォールバック）
+          TITLE=$(awk '
+            { sub(/\r$/, "") }
+            /^---$/ { fm++; next }
+            fm == 1 && /^title:[[:space:]]*/ {
+              sub(/^title:[[:space:]]*/, "")
+              gsub(/^["'\'']|["'\'']$/, "")
+              print
+              exit
+            }
+          ' "${CHANGED_FILE}")
+
+          ARTICLE_ID=$(awk '
+            { sub(/\r$/, "") }
+            /^---$/ { fm++; next }
+            fm == 1 && /^id:[[:space:]]*/ {
+              sub(/^id:[[:space:]]*/, "")
+              gsub(/^["'\'']|["'\'']$/, "")
+              print
+              exit
+            }
+          ' "${CHANGED_FILE}")
+
+          if [ -z "${TITLE}" ]; then
+            TITLE=$(basename "${CHANGED_FILE}" .md)
+          fi
+
+          if [ -n "${ARTICLE_ID}" ] && [ "${ARTICLE_ID}" != "null" ]; then
+            URL="https://qiita.com/items/${ARTICLE_ID}"
+          else
+            URL="https://qiita.com/"
+          fi
+
+          {
+            printf 'title=%s\n' "${TITLE}"
+            printf 'url=%s\n' "${URL}"
+          } >> "$GITHUB_OUTPUT"
