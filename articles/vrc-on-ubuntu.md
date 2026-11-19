@@ -5,7 +5,11 @@ type: "tech" # tech: 技術記事 / idea: アイデア
 topics: ["VRChat","Ubuntu"]
 published: true
 ---
-※blogで書いたもののZenn版です
+※blogで書いたもののZenn版です 
+https://nknighta.me/blog/vrc-on-ubuntu/?utm_source=nknighta_site&utm_medium=blog&utm_campaign=article_link&utm_content=20261005-vrc-alcom
+
+ブログもよろしくお願いします！
+https://nknighta.me/blog/?utm_source=nknighta_site&utm_medium=blog&utm_campaign=article_link&utm_content=20261005-vrc-alcom
 
 ## まえがき
 

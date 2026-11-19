@@ -8,8 +8,8 @@
   "scripts": {
     "ztoq": "ts-node scripts/ztoq.ts",
     "dev": "",
-    "dev:zenn": "zenn",
-    "dev:qiita": "qiita"
+    "zenn": "zenn",
+    "qiita": "qiita"
   },
   "dependencies": {
     "@qiita/qiita-cli": "^1.13.0",
