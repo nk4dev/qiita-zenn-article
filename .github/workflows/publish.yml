@@ -39,7 +39,7 @@ jobs:
       - name: Sync articles from Qiita on failure
         if: steps.publish_qiita.outcome == 'failure'
         env:
-          QIITA_ACCESS_TOKEN: ${{ secrets.QIITA_TOKEN }}
+          QIITA_TOKEN: ${{ secrets.QIITA_TOKEN }}
         run: npx --yes @qiita/qiita-cli pull --root .
 
       - name: Retry publish article to Qiita
