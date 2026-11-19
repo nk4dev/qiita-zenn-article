@@ -11,6 +11,8 @@ id: 0a5afcab5f35ec531ace
 organization_url_name: null
 slide: false
 ignorePublish: false
+posting_campaign_uuid: null
+agreed_posting_campaign_term: false
 ---
 # yarnとnpmはやれることは同じ
 

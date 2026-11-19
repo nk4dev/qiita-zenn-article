@@ -11,6 +11,8 @@ id: 4f7b3f2dbd9be1d17f1a
 organization_url_name: null
 slide: false
 ignorePublish: false
+posting_campaign_uuid: null
+agreed_posting_campaign_term: false
 ---
 # 追記
 今年の初めにv2が公開され、実装方法が大幅に変わりました

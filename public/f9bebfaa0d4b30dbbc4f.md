@@ -12,6 +12,8 @@ id: f9bebfaa0d4b30dbbc4f
 organization_url_name: null
 slide: false
 ignorePublish: false
+posting_campaign_uuid: null
+agreed_posting_campaign_term: false
 ---
 題名からしてわかりにくいのですが、要はWindowsとLinuxのコマンドがどういう風に違うのかまとめです。
 
