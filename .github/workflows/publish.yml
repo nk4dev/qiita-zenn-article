@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      qiita_success: ${{ steps.publish_qiita.outcome == 'success' }}
+      qiita_success: ${{ steps.publish_qiita.outcome == 'success' || steps.retry_publish_qiita.outcome == 'success' }}
       title: ${{ steps.get_info.outputs.title || '' }}
       url: ${{ steps.get_info.outputs.url || '' }}
     steps:
@@ -30,6 +30,21 @@ jobs:
 
       - name: Publish article to Qiita
         id: publish_qiita
+        continue-on-error: true
+        uses: increments/qiita-cli/actions/publish@v1
+        with:
+          qiita-token: ${{ secrets.QIITA_TOKEN }}
+          root: "."
+
+      - name: Sync articles from Qiita on failure
+        if: steps.publish_qiita.outcome == 'failure'
+        env:
+          QIITA_ACCESS_TOKEN: ${{ secrets.QIITA_TOKEN }}
+        run: npx --yes @qiita/qiita-cli pull --root .
+
+      - name: Retry publish article to Qiita
+        id: retry_publish_qiita
+        if: steps.publish_qiita.outcome == 'failure'
         uses: increments/qiita-cli/actions/publish@v1
         with:
           qiita-token: ${{ secrets.QIITA_TOKEN }}
@@ -37,7 +52,7 @@ jobs:
 
       - name: Get published info
         id: get_info
-        if: success()
+        if: steps.publish_qiita.outcome == 'success' || steps.retry_publish_qiita.outcome == 'success'
         run: |
           set -euo pipefail
 
