@@ -4,7 +4,7 @@ tags:
   - github
   - zenn
 private: false
-updated_at: ''
+updated_at: '2026-11-22T17:00:12+09:00'
 id: null
 organization_url_name: null
 slide: false
